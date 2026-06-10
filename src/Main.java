@@ -2,20 +2,27 @@ import estrutura.ListaDuplamenteLigadaCircular;
 import estrutura.NoTabuleiro;
 import modelo.Jogador;
 import modelo.casa.*;
+import modelo.carta.Baralho;
+import modelo.carta.Carta;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Classe principal para demonstração e teste das estruturas de dados do tabuleiro.
+ * Classe principal para demonstração e teste das estruturas de dados do tabuleiro
+ * e do sistema de cartas baseado em Pilha.
  */
 public class Main {
     public static void main(String[] args) {
         System.out.println("=========================================================");
-        System.out.println("   SIMULADOR DE TABULEIRO - ESTRUTURA DE DADOS JAVA      ");
+        System.out.println("   SIMULADOR DE TABULEIRO E BARALHO - ESTRUTURA DE DADOS ");
         System.out.println("=========================================================\n");
 
-        // 1. Instanciando o tabuleiro (Lista Circular Duplamente Ligada)
+        // ==========================================
+        // PARTE 1: TABULEIRO (LISTA CIRCULAR DUPLAMENTE LIGADA)
+        // ==========================================
+        System.out.println(">>> PARTE 1: TESTE DO TABULEIRO (LISTA CIRCULAR DUPLAMENTE LIGADA) <<<\n");
         ListaDuplamenteLigadaCircular tabuleiro = new ListaDuplamenteLigadaCircular();
 
-        // 2. Inserção de Casas de diferentes tipos (Requisito: Inserção de casas)
         tabuleiro.adicionar(new CasaInicio(0, "Ponto de Partida", "Início do tabuleiro. Receba R$ 200 ao passar.", 200.0));
         tabuleiro.adicionar(new CasaImovel(1, "Avenida Paulista", "Bairro comercial e financeiro.", 350.0, 30.0, 50.0, 100.0, "Azul"));
         tabuleiro.adicionar(new CasaImposto(2, "Imposto sobre Fortuna", "Taxa obrigatória ao passar por aqui.", 150.0));
@@ -25,66 +32,86 @@ public class Main {
 
         System.out.println("-> Tabuleiro criado com sucesso contendo " + tabuleiro.getTamanho() + " casas.");
 
-        // 3. Percorrer o tabuleiro completo (Requisito: Percorrer o tabuleiro completo)
+        // Percorrer tabuleiro completo
         tabuleiro.percorrerTabuleiroCompleto();
         tabuleiro.percorrerTabuleiroCompletoReverso();
 
-        // 4. Busca por ID e Nome (Requisito: Busca)
+        // Busca
         System.out.println("\n--- TESTANDO BUSCA DE CASAS ---");
         NoTabuleiro buscaId = tabuleiro.buscarPorId(2);
         if (buscaId != null) {
             System.out.println("[Busca por ID 2] Encontrado: " + buscaId.getCasa());
-        } else {
-            System.out.println("[Busca por ID 2] Casa não encontrada.");
         }
-
         NoTabuleiro buscaNome = tabuleiro.buscarPorNome("Copacabana");
         if (buscaNome != null) {
             System.out.println("[Busca por Nome 'Copacabana'] Encontrado: " + buscaNome.getCasa());
-        } else {
-            System.out.println("[Busca por Nome 'Copacabana'] Casa não encontrada.");
         }
 
-        // 5. Navegação para frente e para trás (Requisito: Navegação)
+        // Navegação
         System.out.println("\n--- TESTANDO NAVEGAÇÃO HORÁRIA/ANTI-HORÁRIA ---");
-        NoTabuleiro atual = tabuleiro.getCabeca(); // Ponto de Partida
-        System.out.println("Posição Atual: " + atual.getCasa().getNome());
-
-        // Navegar para frente
+        NoTabuleiro atual = tabuleiro.getCabeca();
+        System.out.println("Posição Inicial: " + atual.getCasa().getNome());
         atual = atual.getProximo();
         System.out.println("Avançou 1 casa (Próximo): " + atual.getCasa().getNome());
-
-        // Navegar para trás
         atual = atual.getAnterior();
         System.out.println("Recuou 1 casa (Anterior): " + atual.getCasa().getNome());
 
 
-        // 6. Detectar passagem pelo início (Requisito: Detectar passagem pelo início)
-        System.out.println("\n--- TESTANDO DETECÇÃO DE PASSAGEM PELO INÍCIO ---");
-        Jogador jogador = new Jogador("1", "Matheus", 1000.0);
-        System.out.println("Jogador inicial: " + jogador);
+        // ==========================================
+        // PARTE 2: SISTEMA DE CARTAS (PILHA)
+        // ==========================================
+        System.out.println("\n\n>>> PARTE 2: TESTE DO BARALHO DE CARTAS (PILHA) <<<\n");
 
-        // Coloca o jogador inicialmente no nó 4 (Restituição de Imposto)
-        NoTabuleiro posicaoJogador = tabuleiro.buscarPorId(4);
-        System.out.println("Jogador começa em: " + posicaoJogador.getCasa().getNome());
+        // 1. Criando os jogadores ativos para teste
+        List<Jogador> jogadores = new ArrayList<>();
+        Jogador j1 = new Jogador("1", "Matheus", 1000.0);
+        Jogador j2 = new Jogador("2", "Ana", 1000.0);
+        Jogador j3 = new Jogador("3", "Bruno", 1000.0);
+        
+        jogadores.add(j1);
+        jogadores.add(j2);
+        jogadores.add(j3);
 
-        // Vamos rolar o dado (ex: mover 3 casas para frente)
-        // Caminho a percorrer: Restituição de Imposto (4) -> Copacabana (5) -> Ponto de Partida (0) -> Avenida Paulista (1)
-        // Deve detectar a passagem pelo Ponto de Partida (ID 0) e adicionar os R$ 200 ao saldo do jogador.
-        int passos = 3;
-        System.out.println("Jogador rola os dados e avança " + passos + " casas...");
+        // Inicializa a posição de todos no Ponto de Partida
+        for (Jogador j : jogadores) {
+            j.setPosicaoAtual(tabuleiro.getCabeca());
+        }
 
-        posicaoJogador = tabuleiro.moverEVerificarPassagemInicio(posicaoJogador, passos, () -> {
-            // Ação disparada quando detecta passagem pela CasaInicio
-            System.out.println("\n[SISTEMA DE TABULEIRO] -> PASSAGEM PELO INÍCIO DETECTADA!");
-            CasaInicio inicio = (CasaInicio) tabuleiro.getCabeca().getCasa();
-            double bonus = inicio.getValorBonificacao();
-            jogador.setSaldo(jogador.getSaldo() + bonus);
-            System.out.println("Jogador " + jogador.getNome() + " recebeu R$ " + bonus + " de bônus! Novo saldo: R$ " + jogador.getSaldo() + "\n");
-        });
+        System.out.println("--- JOGADORES INICIAIS ---");
+        for (Jogador j : jogadores) {
+            System.out.println(j);
+        }
 
-        System.out.println("Jogador parou na casa: " + posicaoJogador.getCasa().getNome());
-        System.out.println("Jogador final: " + jogador);
+        // 2. Instanciando o Baralho (Pilhas automáticas e embaralhamento)
+        Baralho baralho = new Baralho();
+
+        // 3. Realizando saques sucessivos (14 vezes) para testar os efeitos de ganho,
+        // penalidade, movimentação e a RECRAÇÃO automática do baralho quando vazio (12 cartas no deck).
+        System.out.println("\nIniciando rodadas de saques de cartas (demonstração de efeitos e recarga do deck)...");
+        
+        for (int rodada = 1; rodada <= 14; rodada++) {
+            System.out.println("\n=========================================================");
+            System.out.println(" RODADA DE SAQUE #" + rodada + " | Cartas no deck antes do saque: " + baralho.getCartasRestantes());
+            System.out.println("=========================================================");
+
+            // Alterna o jogador ativo a cada rodada
+            Jogador jogadorAtivo = jogadores.get((rodada - 1) % jogadores.size());
+            System.out.println("Jogador da vez: " + jogadorAtivo.getNome() + " (Saldo: R$ " + jogadorAtivo.getSaldo() + ")");
+
+            // Saca a carta
+            Carta carta = baralho.sacar();
+
+            // Executa o efeito da carta
+            carta.executar(jogadorAtivo, jogadores, tabuleiro);
+
+            // Exibe a situação atualizada de todos os jogadores pós-carta
+            System.out.println("\n--- ESTADO DOS JOGADORES APÓS A CARTA ---");
+            for (Jogador j : jogadores) {
+                System.out.println(j);
+            }
+        }
         System.out.println("\n=========================================================");
+        System.out.println("   FIM DA DEMONSTRAÇÃO E TESTES DAS ESTRUTURAS            ");
+        System.out.println("=========================================================");
     }
 }

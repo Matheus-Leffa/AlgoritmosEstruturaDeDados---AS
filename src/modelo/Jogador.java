@@ -1,18 +1,24 @@
 package modelo;
 
+import estrutura.NoTabuleiro;
+
 /**
- * Representação simplificada (stub) de um Jogador para fins de compilação
- * e associação de propriedades.
+ * Representação completa de um Jogador, integrando seu saldo financeiro,
+ * posição atual no tabuleiro e histórico de movimentação para o sistema de cartas.
  */
 public class Jogador {
     private String id;
     private String nome;
     private double saldo;
+    private NoTabuleiro posicaoAtual;
+    private NoTabuleiro posicaoAnterior;
 
     public Jogador(String id, String nome, double saldo) {
         this.id = id;
         this.nome = nome;
         this.saldo = saldo;
+        this.posicaoAtual = null;
+        this.posicaoAnterior = null;
     }
 
     public String getId() {
@@ -39,8 +45,30 @@ public class Jogador {
         this.saldo = saldo;
     }
 
+    public NoTabuleiro getPosicaoAtual() {
+        return posicaoAtual;
+    }
+
+    /**
+     * Define a nova posição atual do jogador, guardando a posição antiga
+     * como a posição anterior (histórico de movimentação).
+     */
+    public void setPosicaoAtual(NoTabuleiro novaPosicao) {
+        this.posicaoAnterior = this.posicaoAtual;
+        this.posicaoAtual = novaPosicao;
+    }
+
+    public NoTabuleiro getPosicaoAnterior() {
+        return posicaoAnterior;
+    }
+
+    public void setPosicaoAnterior(NoTabuleiro posicaoAnterior) {
+        this.posicaoAnterior = posicaoAnterior;
+    }
+
     @Override
     public String toString() {
-        return String.format("%s (Saldo: R$ %.2f)", nome, saldo);
+        String nomePosicao = (posicaoAtual != null) ? posicaoAtual.getCasa().getNome() : "Fora do tabuleiro";
+        return String.format("%s [Saldo: R$ %.2f | Pos: %s]", nome, saldo, nomePosicao);
     }
 }
