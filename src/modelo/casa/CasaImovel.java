@@ -1,6 +1,7 @@
 package modelo.casa;
 
 import modelo.Jogador;
+import modelo.TipoPersonagem;
 
 /**
  * Representa um imóvel comprável no tabuleiro (terrenos, empresas, etc.).
@@ -37,6 +38,13 @@ public class CasaImovel extends Casa {
     }
 
     public double getAluguelBase() {
+        if (proprietario != null && proprietario.getTipoPersonagem() == TipoPersonagem.CONSTRUTOR) {
+            return aluguelBase * 1.15;
+        }
+        return aluguelBase;
+    }
+
+    public double getAluguelBaseOriginal() {
         return aluguelBase;
     }
 
@@ -96,10 +104,11 @@ public class CasaImovel extends Casa {
      * Calcula o valor do aluguel atual com base no número de casas ou se possui hotel.
      */
     public double calcularAluguelAtual() {
+        double base = getAluguelBase();
         if (temHotel) {
-            return aluguelBase + (aluguelPorCasa * 5); // Supondo hotel equivale a 5 casas em rentabilidade
+            return base + (aluguelPorCasa * 5); // Supondo hotel equivale a 5 casas em rentabilidade
         }
-        return aluguelBase + (aluguelPorCasa * quantidadeCasas);
+        return base + (aluguelPorCasa * quantidadeCasas);
     }
 
     @Override
