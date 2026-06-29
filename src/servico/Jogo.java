@@ -23,7 +23,13 @@ public class Jogo {
     private List<Jogador> jogadoresFalidos;
     private int rodada;
     private Random random;
-    private static final double SALARIO_BASE = 200.0;
+    
+    // Configurações dinâmicas da partida
+    private double salarioBase = 200.0;
+    private int maxRodadas = 100;
+    private boolean interativo = false;
+
+    private static final java.util.Scanner scanner = new java.util.Scanner(System.in);
 
     public Jogo(ListaDuplamenteLigadaCircular tabuleiro, List<Jogador> jogadoresIniciais) {
         this.tabuleiro = tabuleiro;
@@ -37,6 +43,31 @@ public class Jogo {
         for (Jogador j : jogadoresAtivos) {
             j.setPosicaoAtual(tabuleiro.getCabeca());
         }
+    }
+
+    // Getters e Setters para configurações dinâmicas
+    public double getSalarioBase() {
+        return salarioBase;
+    }
+
+    public void setSalarioBase(double salarioBase) {
+        this.salarioBase = salarioBase;
+    }
+
+    public int getMaxRodadas() {
+        return maxRodadas;
+    }
+
+    public void setMaxRodadas(int maxRodadas) {
+        this.maxRodadas = maxRodadas;
+    }
+
+    public boolean isInterativo() {
+        return interativo;
+    }
+
+    public void setInterativo(boolean interativo) {
+        this.interativo = interativo;
     }
 
     /**
@@ -59,7 +90,7 @@ public class Jogo {
      * Verifica se a partida foi encerrada.
      */
     public boolean isPartidaEncerrada() {
-        return jogadoresAtivos.size() <= 1 || rodada > 100;
+        return jogadoresAtivos.size() <= 1 || rodada > maxRodadas;
     }
 
     /**
@@ -94,17 +125,26 @@ public class Jogo {
         System.out.println("\n[TURNO] Vez de: " + jogador.getNome() + " (" + jogador.getTipoPersonagem() + ")");
         System.out.println("   Saldo Atual: R$ " + jogador.getSaldo() + " | Pos: " + jogador.getPosicaoAtual().getCasa().getNome());
 
+        if (interativo) {
+            System.out.println("Pressione ENTER para lançar os dados...");
+            scanner.nextLine();
+        }
+
         // Tratamento da prisão
         if (jogador.isPreso()) {
             processarTentativaFugaPrisao(jogador);
             verificarFalenciasGerais();
             // Se continuar preso ou faliu após a tentativa, encerra o turno dele aqui
             if (jogador.isPreso() || jogador.isFalido()) {
+                if (interativo) {
+                    System.out.println("Pressione ENTER para continuar para o próximo jogador.");
+                    scanner.nextLine();
+                }
                 return;
             }
         }
 
-        // 1. Rolagem de dois dados (requisito)
+        // 1. Rolagem de dois dados
         int dado1 = rolarDado();
         int dado2 = rolarDado();
         int totalCasas = dado1 + dado2;
@@ -118,6 +158,11 @@ public class Jogo {
 
         // 4. Verificação pós-turno de falência geral (afeta o jogador da vez e outros)
         verificarFalenciasGerais();
+
+        if (interativo) {
+            System.out.println("Pressione ENTER para continuar para o próximo jogador.");
+            scanner.nextLine();
+        }
     }
 
     /**
@@ -136,7 +181,7 @@ public class Jogo {
             // Callback: jogador cruza o início do tabuleiro
             System.out.println("   [TABULEIRO] " + jogador.getNome() + " cruzou a linha de partida!");
             jogador.incrementarVoltas();
-            jogador.receberSalario(SALARIO_BASE);
+            jogador.receberSalario(salarioBase);
         });
         jogador.setPosicaoAtual(novaPosicao);
         System.out.println("   [TABULEIRO] " + jogador.getNome() + " moveu-se de " + antigaPosicao.getCasa().getNome() + " para " + novaPosicao.getCasa().getNome());
@@ -187,23 +232,65 @@ public class Jogo {
         Jogador proprietario = imovel.getProprietario();
 
         if (proprietario == null) {
-            // Imóvel disponível para compra
             System.out.println("   [CASA] " + imovel.getNome() + " está à venda por R$ " + imovel.getPrecoCompra());
-            if (jogador.getSaldo() >= imovel.getPrecoCompra()) {
-                jogador.comprarPropriedade(imovel);
+            boolean comprar = true;
+            if (interativo) {
+                System.out.println("   Deseja comprar o imóvel?");
+                System.out.println("   1 - Sim");
+                System.out.println("   2 - Não");
+                comprar = lerOpcaoInterativa(1, 2) == 1;
+            }
+            if (comprar) {
+                if (jogador.getSaldo() >= imovel.getPrecoCompra()) {
+                    jogador.comprarPropriedade(imovel);
+                } else {
+                    System.out.println("   [CASA] Saldo insuficiente para efetuar a compra.");
+                }
             } else {
-                System.out.println("   [CASA] Saldo insuficiente para efetuar a compra.");
+                System.out.println("   [CASA] Você escolheu não comprar o imóvel.");
             }
         } else if (proprietario == jogador) {
-            // Próprio jogador é dono: tenta fazer melhorias
             System.out.println("   [CASA] Você parou na sua própria propriedade: " + imovel.getNome());
-            tentarConstruirNoImovel(jogador, imovel);
+            if (interativo) {
+                double custo = imovel.getCustoConstrucaoCasa();
+                if (!imovel.isTemHotel()) {
+                    if (imovel.getQuantidadeCasas() < 4) {
+                        System.out.println("   Deseja construir a " + (imovel.getQuantidadeCasas() + 1) + "ª casa por R$ " + custo + "?");
+                    } else {
+                        System.out.println("   Deseja construir um HOTEL por R$ " + custo + "?");
+                    }
+                    System.out.println("   1 - Sim");
+                    System.out.println("   2 - Não");
+                    if (lerOpcaoInterativa(1, 2) == 1) {
+                        tentarConstruirNoImovel(jogador, imovel);
+                    } else {
+                        System.out.println("   [MELHORIA] Você escolheu não construir melhorias.");
+                    }
+                }
+            } else {
+                tentarConstruirNoImovel(jogador, imovel);
+            }
         } else {
-            // Pertence a outro jogador: cobra aluguel
             double valorAluguel = imovel.calcularAluguelAtual();
             System.out.println("   [CASA] Propriedade de " + proprietario.getNome() + ". Taxa de aluguel: R$ " + valorAluguel);
             double valorPago = jogador.pagarAluguel(proprietario, valorAluguel);
             imovel.adicionarAluguelGerado(valorPago);
+        }
+    }
+
+    private int lerOpcaoInterativa(int min, int max) {
+        while (true) {
+            try {
+                System.out.print("   Escolha uma opção: ");
+                String linha = scanner.nextLine().trim();
+                int opcao = Integer.parseInt(linha);
+                if (opcao >= min && opcao <= max) {
+                    return opcao;
+                }
+                System.out.println("   Opção inválida. Digite um valor entre " + min + " e " + max + ".");
+            } catch (NumberFormatException e) {
+                System.out.println("   Entrada inválida. Digite um número inteiro.");
+            }
         }
     }
 
@@ -218,6 +305,8 @@ public class Jogo {
                     jogador.pagar(custo);
                     imovel.setQuantidadeCasas(imovel.getQuantidadeCasas() + 1);
                     System.out.println("   [MELHORIA] Construiu a " + imovel.getQuantidadeCasas() + "ª casa em " + imovel.getNome() + " por R$ " + custo);
+                } else {
+                    System.out.println("   [MELHORIA] Saldo insuficiente para construir.");
                 }
             } else {
                 if (jogador.getSaldo() >= custo) {
@@ -225,42 +314,31 @@ public class Jogo {
                     imovel.setQuantidadeCasas(0);
                     imovel.setTemHotel(true);
                     System.out.println("   [MELHORIA] Construiu um HOTEL em " + imovel.getNome() + " por R$ " + custo);
+                } else {
+                    System.out.println("   [MELHORIA] Saldo insuficiente para construir.");
                 }
             }
         }
     }
 
-    /**
-     * Executa a cobrança de imposto do jogador.
-     */
     private void processarCasaImposto(Jogador jogador, CasaImposto imposto) {
         double taxa = imposto.getValorImposto();
-        System.out.println("   [CASA] Landed on tax space. Cobrança de: R$ " + taxa);
+        System.out.println("   [CASA] Cobrança de imposto no valor de: R$ " + taxa);
         jogador.pagarImposto(taxa);
     }
 
-    /**
-     * Aplica o recebimento de restituição financeira ao jogador.
-     */
     private void processarCasaRestituicao(Jogador jogador, CasaRestituicao restituicao) {
         double valor = restituicao.getValorRestituicao();
-        System.out.println("   [CASA] Landed on tax refund. Crédito de: R$ " + valor);
+        System.out.println("   [CASA] Restituição fiscal recebida: R$ " + valor);
         jogador.adicionarSaldo(valor);
     }
 
-    /**
-     * Saca e executa a carta do baralho.
-     */
     private void processarCasaSorteReves(Jogador jogador, CasaSorteReves casaSorteReves) {
         Carta carta = baralho.sacar();
         carta.executar(jogador, jogadoresAtivos, tabuleiro);
         verificarFalenciasGerais();
     }
 
-    /**
-     * Verifica as contas de todos os jogadores para aplicar falências gerais.
-     * Necessário caso cartas de Sorte/Revés forcem retiradas que levem o saldo de outros jogadores a ficarem negativos.
-     */
     private void verificarFalenciasGerais() {
         List<Jogador> copia = new ArrayList<>(jogadoresAtivos);
         for (Jogador j : copia) {
@@ -274,9 +352,6 @@ public class Jogo {
         }
     }
 
-    /**
-     * Desapropria os bens do jogador e o remove da partida ativa.
-     */
     private void declararFalenciaJogador(Jogador jogador) {
         System.out.println("\n[SISTEMA] Falência decretada para: " + jogador.getNome() + "!");
         jogador.desapropriarTudo();
@@ -287,7 +362,7 @@ public class Jogo {
     /**
      * Auxiliar para calcular o patrimônio total do jogador (saldo + valor de compra das propriedades possuídas).
      */
-    private double calcularPatrimonio(Jogador jogador) {
+    public double calcularPatrimonio(Jogador jogador) {
         double patrimonio = jogador.getSaldo();
         for (CasaImovel p : jogador.getPropriedades()) {
             patrimonio += p.getPrecoCompra();
@@ -298,12 +373,12 @@ public class Jogo {
     /**
      * Exibe estatísticas consolidadas e classificados da partida após a conclusão.
      */
-    private void exibirRelatorioFinal() {
+    public void exibirRelatorioFinal() {
         System.out.println("\n=========================================================");
         System.out.println("               RELATÓRIO CONSOLIDADO DO JOGO             ");
         System.out.println("=========================================================\n");
 
-        // 1. Ranking dos jogadores por patrimônio total
+        // 1. Ranking dos jogadores por patrimônio total (Ativos + Falidos)
         List<Jogador> todosJogadores = new ArrayList<>();
         todosJogadores.addAll(jogadoresAtivos);
         todosJogadores.addAll(jogadoresFalidos);
@@ -398,4 +473,9 @@ public class Jogo {
     public int getRodada() {
         return rodada;
     }
+
+    public ListaDuplamenteLigadaCircular getTabuleiro() {
+        return tabuleiro;
+    }
+
 }

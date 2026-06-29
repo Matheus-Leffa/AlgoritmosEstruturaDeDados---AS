@@ -15,6 +15,11 @@ public class PreJogoService {
     private final JogadorRepositorio jogadorRepositorio;
     private final ImovelRepositorio imovelRepositorio;
 
+    // Configurações personalizáveis da partida
+    private double saldoInicial = 1200.0;
+    private double salarioBase = 200.0;
+    private int maxRodadas = 100;
+
     public PreJogoService(JogadorRepositorio jogadorRepositorio, ImovelRepositorio imovelRepositorio) {
         if (jogadorRepositorio == null || imovelRepositorio == null) {
             throw new IllegalArgumentException("Os repositórios de jogador e imóvel não podem ser nulos.");
@@ -29,6 +34,34 @@ public class PreJogoService {
 
     public ImovelRepositorio getImovelRepositorio() {
         return imovelRepositorio;
+    }
+
+    public double getSaldoInicial() {
+        return saldoInicial;
+    }
+
+    public void setSaldoInicial(double saldoInicial) {
+        this.saldoInicial = saldoInicial;
+        // Atualiza o saldo de todos os jogadores já cadastrados para refletir a nova configuração
+        for (Jogador j : jogadorRepositorio.listar()) {
+            j.setSaldo(saldoInicial);
+        }
+    }
+
+    public double getSalarioBase() {
+        return salarioBase;
+    }
+
+    public void setSalarioBase(double salarioBase) {
+        this.salarioBase = salarioBase;
+    }
+
+    public int getMaxRodadas() {
+        return maxRodadas;
+    }
+
+    public void setMaxRodadas(int maxRodadas) {
+        this.maxRodadas = maxRodadas;
     }
 
     /**
@@ -68,8 +101,8 @@ public class PreJogoService {
         // 2. Constrói o tabuleiro circular
         ListaDuplamenteLigadaCircular tabuleiro = new ListaDuplamenteLigadaCircular();
 
-        // Sempre inicia com o Ponto de Partida
-        tabuleiro.adicionar(new CasaInicio(0, "Ponto de Partida", "Início do tabuleiro. Receba R$ 200 ao passar.", 200.0));
+        // Sempre inicia com o Ponto de Partida com a bonificação configurada
+        tabuleiro.adicionar(new CasaInicio(0, "Ponto de Partida", "Início do tabuleiro. Receba R$ " + salarioBase + " ao passar.", salarioBase));
 
         List<CasaImovel> imoveisList = imovelRepositorio.listar();
         int idEspecial = 1000; // Intervalo de IDs reservado para casas dinâmicas especiais
@@ -93,6 +126,10 @@ public class PreJogoService {
         }
 
         // 3. Cria a instância de controle da partida com o tabuleiro e a lista de jogadores ativos
-        return new Jogo(tabuleiro, jogadorRepositorio.listar());
+        Jogo jogo = new Jogo(tabuleiro, jogadorRepositorio.listar());
+        jogo.setSalarioBase(salarioBase);
+        jogo.setMaxRodadas(maxRodadas);
+        jogo.setInterativo(true);
+        return jogo;
     }
 }

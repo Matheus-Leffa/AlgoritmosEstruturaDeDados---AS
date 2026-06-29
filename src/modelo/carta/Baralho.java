@@ -29,154 +29,155 @@ public class Baralho {
      * contendo seus respectivos efeitos através de expressões Lambda.
      */
     private void inicializarModeloCartas() {
+
         // === 6 CARTAS DE GANHO (SORTE) ===
 
         // 1. Receber dinheiro do banco
-        modeloCartas.add(new Carta(1, "Herança Inesperada", 
-            "Um parente distante deixou uma herança para você. Receba R$ 150 do banco.", 
-            TipoCarta.SORTE, 
-            (jogador, todos, tabuleiro) -> {
-                jogador.setSaldo(jogador.getSaldo() + 150.0);
-                System.out.println("-> [EFEITO] Saldo de " + jogador.getNome() + " aumentado em R$ 150,00.");
-            }
+        modeloCartas.add(new Carta(1, "Herança Inesperada",
+                "Um parente distante deixou uma herança para você. Receba R$ 150 do banco.",
+                TipoCarta.SORTE,
+                (jogador, todos, tabuleiro) -> {
+                    jogador.setSaldo(jogador.getSaldo() + 150.0);
+                    System.out.println("-> [EFEITO] Saldo de " + jogador.getNome() + " aumentado em R$ 150,00.");
+                }
         ));
 
         // 2. Avançar N casas
-        modeloCartas.add(new Carta(2, "Passo Rápido", 
-            "Caminho livre! Avance 3 casas no tabuleiro.", 
-            TipoCarta.SORTE, 
-            (jogador, todos, tabuleiro) -> {
-                System.out.println("-> [EFEITO] Movendo " + jogador.getNome() + " 3 casas para frente...");
-                NoTabuleiro novaPos = tabuleiro.moverEVerificarPassagemInicio(jogador.getPosicaoAtual(), 3, () -> {
-                    System.out.println("   [BÔNUS DE INÍCIO] Passou pelo ponto de partida! +R$ 200,00.");
-                    jogador.setSaldo(jogador.getSaldo() + 200.0);
-                });
-                jogador.setPosicaoAtual(novaPos);
-            }
+        modeloCartas.add(new Carta(2, "Passo Rápido",
+                "Caminho livre! Avance 3 casas no tabuleiro.",
+                TipoCarta.SORTE,
+                (jogador, todos, tabuleiro) -> {
+                    System.out.println("-> [EFEITO] Movendo " + jogador.getNome() + " 3 casas para frente...");
+                    NoTabuleiro novaPos = tabuleiro.moverEVerificarPassagemInicio(jogador.getPosicaoAtual(), 3, () -> {
+                        System.out.println("   [BÔNUS DE INÍCIO] Passou pelo ponto de partida! +R$ 200,00.");
+                        jogador.setSaldo(jogador.getSaldo() + 200.0);
+                    });
+                    jogador.setPosicaoAtual(novaPos);
+                }
         ));
 
         // 3. Avançar diretamente para o início
-        modeloCartas.add(new Carta(3, "Vá para o Início", 
-            "Siga diretamente para o ponto de partida e receba a bonificação.", 
-            TipoCarta.SORTE, 
-            (jogador, todos, tabuleiro) -> {
-                System.out.println("-> [EFEITO] Teletransportando " + jogador.getNome() + " para o Ponto de Partida.");
-                jogador.setPosicaoAtual(tabuleiro.getCabeca());
-                double bonus = 200.0;
-                if (tabuleiro.getCabeca().getCasa() instanceof CasaInicio) {
-                    bonus = ((CasaInicio) tabuleiro.getCabeca().getCasa()).getValorBonificacao();
+        modeloCartas.add(new Carta(3, "Vá para o Início",
+                "Siga diretamente para o ponto de partida e receba a bonificação.",
+                TipoCarta.SORTE,
+                (jogador, todos, tabuleiro) -> {
+                    System.out.println("-> [EFEITO] Teletransportando " + jogador.getNome() + " para o Ponto de Partida.");
+                    jogador.setPosicaoAtual(tabuleiro.getCabeca());
+                    double bonus = 200.0;
+                    if (tabuleiro.getCabeca().getCasa() instanceof CasaInicio) {
+                        bonus = ((CasaInicio) tabuleiro.getCabeca().getCasa()).getValorBonificacao();
+                    }
+                    jogador.setSaldo(jogador.getSaldo() + bonus);
+                    System.out.println("   [BÔNUS DE INÍCIO] Recebeu R$ " + bonus + " por chegar ao Início.");
                 }
-                jogador.setSaldo(jogador.getSaldo() + bonus);
-                System.out.println("   [BÔNUS DE INÍCIO] Recebeu R$ " + bonus + " por chegar ao Início.");
-            }
         ));
 
         // 4. Receber dinheiro dos demais jogadores
-        modeloCartas.add(new Carta(4, "Festa de Aniversário", 
-            "Hoje é seu aniversário! Cada jogador lhe dá R$ 50 de presente.", 
-            TipoCarta.SORTE, 
-            (jogador, todos, tabuleiro) -> {
-                double taxa = 50.0;
-                int pagantes = 0;
-                for (Jogador outro : todos) {
-                    if (!outro.getId().equals(jogador.getId())) {
-                        outro.setSaldo(outro.getSaldo() - taxa);
-                        jogador.setSaldo(jogador.getSaldo() + taxa);
-                        System.out.println("   " + outro.getNome() + " pagou R$ 50,00 para " + jogador.getNome());
-                        pagantes++;
+        modeloCartas.add(new Carta(4, "Festa de Aniversário",
+                "Hoje é seu aniversário! Cada jogador lhe dá R$ 50 de presente.",
+                TipoCarta.SORTE,
+                (jogador, todos, tabuleiro) -> {
+                    double taxa = 50.0;
+                    int pagantes = 0;
+                    for (Jogador outro : todos) {
+                        if (!outro.getId().equals(jogador.getId())) {
+                            outro.setSaldo(outro.getSaldo() - taxa);
+                            jogador.setSaldo(jogador.getSaldo() + taxa);
+                            System.out.println("   " + outro.getNome() + " pagou R$ 50,00 para " + jogador.getNome());
+                            pagantes++;
+                        }
                     }
+                    System.out.println("-> [EFEITO] Você arrecadou R$ " + (taxa * pagantes) + " dos adversários.");
                 }
-                System.out.println("-> [EFEITO] Você arrecadou R$ " + (taxa * pagantes) + " dos adversários.");
-            }
         ));
 
         // 5. Receber dinheiro do banco (Ganho adicional)
-        modeloCartas.add(new Carta(5, "Prêmio de Investimento", 
-            "Suas ações renderam bons dividendos. Receba R$ 100 do banco.", 
-            TipoCarta.SORTE, 
-            (jogador, todos, tabuleiro) -> {
-                jogador.setSaldo(jogador.getSaldo() + 100.0);
-                System.out.println("-> [EFEITO] Saldo de " + jogador.getNome() + " aumentado em R$ 100,00.");
-            }
+        modeloCartas.add(new Carta(5, "Prêmio de Investimento",
+                "Suas ações renderam bons dividendos. Receba R$ 100 do banco.",
+                TipoCarta.SORTE,
+                (jogador, todos, tabuleiro) -> {
+                    jogador.setSaldo(jogador.getSaldo() + 100.0);
+                    System.out.println("-> [EFEITO] Saldo de " + jogador.getNome() + " aumentado em R$ 100,00.");
+                }
         ));
 
         // 6. Receber dinheiro dos demais jogadores (Ganho adicional)
-        modeloCartas.add(new Carta(6, "Cobrança de Dívidas", 
-            "Você cobrou favores antigos. Cada jogador lhe paga R$ 20.", 
-            TipoCarta.SORTE, 
-            (jogador, todos, tabuleiro) -> {
-                double taxa = 20.0;
-                int pagantes = 0;
-                for (Jogador outro : todos) {
-                    if (!outro.getId().equals(jogador.getId())) {
-                        outro.setSaldo(outro.getSaldo() - taxa);
-                        jogador.setSaldo(jogador.getSaldo() + taxa);
-                        System.out.println("   " + outro.getNome() + " pagou R$ 20,00 para " + jogador.getNome());
-                        pagantes++;
+        modeloCartas.add(new Carta(6, "Cobrança de Dívidas",
+                "Você cobrou favores antigos. Cada jogador lhe paga R$ 20.",
+                TipoCarta.SORTE,
+                (jogador, todos, tabuleiro) -> {
+                    double taxa = 20.0;
+                    int pagantes = 0;
+                    for (Jogador outro : todos) {
+                        if (!outro.getId().equals(jogador.getId())) {
+                            outro.setSaldo(outro.getSaldo() - taxa);
+                            jogador.setSaldo(jogador.getSaldo() + taxa);
+                            System.out.println("   " + outro.getNome() + " pagou R$ 20,00 para " + jogador.getNome());
+                            pagantes++;
+                        }
                     }
+                    System.out.println("-> [EFEITO] Você arrecadou R$ " + (taxa * pagantes) + " dos adversários.");
                 }
-                System.out.println("-> [EFEITO] Você arrecadou R$ " + (taxa * pagantes) + " dos adversários.");
-            }
         ));
 
         // === 6 CARTAS DE PENALIDADE (REVÉS) ===
 
         // 7. Pagar dinheiro ao banco
-        modeloCartas.add(new Carta(7, "Conserto do Carro", 
-            "Seu veículo quebrou. Pague R$ 100 ao banco pelo conserto.", 
-            TipoCarta.REVES, 
-            (jogador, todos, tabuleiro) -> {
-                jogador.setSaldo(jogador.getSaldo() - 100.0);
-                System.out.println("-> [EFEITO] Saldo de " + jogador.getNome() + " reduzido em R$ 100,00.");
-            }
+        modeloCartas.add(new Carta(7, "Conserto do Carro",
+                "Seu veículo quebrou. Pague R$ 100 ao banco pelo conserto.",
+                TipoCarta.REVES,
+                (jogador, todos, tabuleiro) -> {
+                    jogador.setSaldo(jogador.getSaldo() - 100.0);
+                    System.out.println("-> [EFEITO] Saldo de " + jogador.getNome() + " reduzido em R$ 100,00.");
+                }
         ));
 
         // 8. Pagar dinheiro ao banco
-        modeloCartas.add(new Carta(8, "Imposto de Renda Extra", 
-            "Erro na declaração fiscal. Pague R$ 150 ao banco.", 
-            TipoCarta.REVES, 
-            (jogador, todos, tabuleiro) -> {
-                jogador.setSaldo(jogador.getSaldo() - 150.0);
-                System.out.println("-> [EFEITO] Saldo de " + jogador.getNome() + " reduzido em R$ 150,00.");
-            }
+        modeloCartas.add(new Carta(8, "Imposto de Renda Extra",
+                "Erro na declaração fiscal. Pague R$ 150 ao banco.",
+                TipoCarta.REVES,
+                (jogador, todos, tabuleiro) -> {
+                    jogador.setSaldo(jogador.getSaldo() - 150.0);
+                    System.out.println("-> [EFEITO] Saldo de " + jogador.getNome() + " reduzido em R$ 150,00.");
+                }
         ));
 
         // 9. Pagar dinheiro aos demais jogadores
-        modeloCartas.add(new Carta(9, "Jantar de Negócios", 
-            "Você convidou todos para jantar. Pague R$ 40 para cada um dos outros jogadores.", 
-            TipoCarta.REVES, 
-            (jogador, todos, tabuleiro) -> {
-                double taxa = 40.0;
-                int cobrados = 0;
-                for (Jogador outro : todos) {
-                    if (!outro.getId().equals(jogador.getId())) {
-                        jogador.setSaldo(jogador.getSaldo() - taxa);
-                        outro.setSaldo(outro.getSaldo() + taxa);
-                        System.out.println("   " + jogador.getNome() + " pagou R$ 40,00 para " + outro.getNome());
-                        cobrados++;
+        modeloCartas.add(new Carta(9, "Jantar de Negócios",
+                "Você convidou todos para jantar. Pague R$ 40 para cada um dos outros jogadores.",
+                TipoCarta.REVES,
+                (jogador, todos, tabuleiro) -> {
+                    double taxa = 40.0;
+                    int cobrados = 0;
+                    for (Jogador outro : todos) {
+                        if (!outro.getId().equals(jogador.getId())) {
+                            jogador.setSaldo(jogador.getSaldo() - taxa);
+                            outro.setSaldo(outro.getSaldo() + taxa);
+                            System.out.println("   " + jogador.getNome() + " pagou R$ 40,00 para " + outro.getNome());
+                            cobrados++;
+                        }
                     }
+                    System.out.println("-> [EFEITO] Você gastou R$ " + (taxa * cobrados) + " no total.");
                 }
-                System.out.println("-> [EFEITO] Você gastou R$ " + (taxa * cobrados) + " no total.");
-            }
         ));
 
         // 10. Pagar dinheiro aos demais jogadores (Penalidade adicional)
-        modeloCartas.add(new Carta(10, "Vaquinha Beneficente", 
-            "É hora de ajudar! Contribua com R$ 30 para cada jogador ativo na mesa.", 
-            TipoCarta.REVES, 
-            (jogador, todos, tabuleiro) -> {
-                double taxa = 30.0;
-                int cobrados = 0;
-                for (Jogador outro : todos) {
-                    if (!outro.getId().equals(jogador.getId())) {
-                        jogador.setSaldo(jogador.getSaldo() - taxa);
-                        outro.setSaldo(outro.getSaldo() + taxa);
-                        System.out.println("   " + jogador.getNome() + " transferiu R$ 30,00 para " + outro.getNome());
-                        cobrados++;
+        modeloCartas.add(new Carta(10, "Vaquinha Beneficente",
+                "É hora de ajudar! Contribua com R$ 30 para cada jogador ativo na mesa.",
+                TipoCarta.REVES,
+                (jogador, todos, tabuleiro) -> {
+                    double taxa = 30.0;
+                    int cobrados = 0;
+                    for (Jogador outro : todos) {
+                        if (!outro.getId().equals(jogador.getId())) {
+                            jogador.setSaldo(jogador.getSaldo() - taxa);
+                            outro.setSaldo(outro.getSaldo() + taxa);
+                            System.out.println("   " + jogador.getNome() + " transferiu R$ 30,00 para " + outro.getNome());
+                            cobrados++;
+                        }
                     }
+                    System.out.println("-> [EFEITO] Despesa de R$ " + (taxa * cobrados) + " efetuada.");
                 }
-                System.out.println("-> [EFEITO] Despesa de R$ " + (taxa * cobrados) + " efetuada.");
-            }
         ));
 
         // 11. Voltar N casas
