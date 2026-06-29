@@ -169,8 +169,8 @@ public class Jogador {
      * Processa a transferência de aluguel para outro jogador.
      * NEGOCIANTE paga 10% a menos de aluguel.
      */
-    public void pagarAluguel(Jogador proprietario, double valorBase) {
-        if (this.falido) return;
+    public double pagarAluguel(Jogador proprietario, double valorBase) {
+        if (this.falido) return 0.0;
         
         double valorFinal = valorBase;
         if (tipoPersonagem == TipoPersonagem.NEGOCIANTE) {
@@ -182,6 +182,7 @@ public class Jogador {
             this.saldo -= valorFinal;
             proprietario.adicionarSaldo(valorFinal);
             System.out.println("   [ALUGUEL] " + nome + " pagou R$ " + valorFinal + " para " + proprietario.getNome());
+            return valorFinal;
         } else {
             // Falência ao pagar aluguel (transfere o resto dos fundos)
             double transferido = this.saldo;
@@ -190,6 +191,7 @@ public class Jogador {
             proprietario.adicionarSaldo(transferido);
             System.out.println("   [FALÊNCIA] " + nome + " não possui saldo suficiente (R$ " + valorFinal + 
                                "). Transferiu R$ " + transferido + " para " + proprietario.getNome() + " e faliu.");
+            return transferido;
         }
     }
 

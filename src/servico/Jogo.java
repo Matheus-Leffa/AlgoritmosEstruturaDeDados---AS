@@ -202,7 +202,8 @@ public class Jogo {
             // Pertence a outro jogador: cobra aluguel
             double valorAluguel = imovel.calcularAluguelAtual();
             System.out.println("   [CASA] Propriedade de " + proprietario.getNome() + ". Taxa de aluguel: R$ " + valorAluguel);
-            jogador.pagarAluguel(proprietario, valorAluguel);
+            double valorPago = jogador.pagarAluguel(proprietario, valorAluguel);
+            imovel.adicionarAluguelGerado(valorPago);
         }
     }
 
@@ -284,6 +285,17 @@ public class Jogo {
     }
 
     /**
+     * Auxiliar para calcular o patrimônio total do jogador (saldo + valor de compra das propriedades possuídas).
+     */
+    private double calcularPatrimonio(Jogador jogador) {
+        double patrimonio = jogador.getSaldo();
+        for (CasaImovel p : jogador.getPropriedades()) {
+            patrimonio += p.getPrecoCompra();
+        }
+        return patrimonio;
+    }
+
+    /**
      * Exibe estatísticas consolidadas e classificados da partida após a conclusão.
      */
     private void exibirRelatorioFinal() {
@@ -291,45 +303,85 @@ public class Jogo {
         System.out.println("               RELATÓRIO CONSOLIDADO DO JOGO             ");
         System.out.println("=========================================================\n");
 
-        if (jogadoresAtivos.size() == 1) {
-            Jogador vencedor = jogadoresAtivos.get(0);
-            System.out.println("🏆 VENCEDOR DO JOGO POR ELIMINAÇÃO: " + vencedor.getNome().toUpperCase() + " (" + vencedor.getTipoPersonagem() + ")");
-            System.out.println("💰 Saldo Acumulado: R$ " + vencedor.getSaldo());
-            System.out.println("🔄 Rodadas Completas no Tabuleiro: " + vencedor.getVoltasCompletas() + " voltas.");
-            System.out.println("🏠 Propriedades de Posse: " + vencedor.getPropriedades().size());
-            for (CasaImovel p : vencedor.getPropriedades()) {
-                String melhorias = p.isTemHotel() ? "Hotel" : p.getQuantidadeCasas() + " Casa(s)";
-                System.out.println("   - " + p.getNome() + " (Melhorias: " + melhorias + " | Aluguel Atual: R$ " + p.calcularAluguelAtual() + ")");
-            }
-        } else if (jogadoresAtivos.size() > 1) {
-            Jogador vencedor = null;
-            double maiorPatrimonio = -1.0;
-            System.out.println("⏱️ LIMITE DE RODADAS ALCANÇADO (" + (rodada - 1) + " rodadas)!");
-            System.out.println("--- PATRIMÔNIO DOS JOGADORES ATIVOS ---");
-            for (Jogador j : jogadoresAtivos) {
-                double patrimonio = j.getSaldo();
-                for (CasaImovel p : j.getPropriedades()) {
-                    patrimonio += p.getPrecoCompra();
+        // 1. Ranking dos jogadores por patrimônio total
+        List<Jogador> todosJogadores = new ArrayList<>();
+        todosJogadores.addAll(jogadoresAtivos);
+        todosJogadores.addAll(jogadoresFalidos);
+        todosJogadores.sort((a, b) -> Double.compare(calcularPatrimonio(b), calcularPatrimonio(a)));
+
+        System.out.println("🏆 --- RANKING DE JOGADORES POR PATRIMÔNIO ---");
+        for (int i = 0; i < todosJogadores.size(); i++) {
+            Jogador j = todosJogadores.get(i);
+            double pat = calcularPatrimonio(j);
+            System.out.printf(" %dº Lugar: %s (%s) | Patrimônio Total: R$ %.2f (Saldo: R$ %.2f | Imóveis: R$ %.2f)\n",
+                    (i + 1), j.getNome(), j.getTipoPersonagem(), pat, j.getSaldo(), (pat - j.getSaldo()));
+        }
+
+        // 2. Número de voltas completas de cada jogador
+        System.out.println("\n🔄 --- VOLTAS COMPLETAS PELO TABULEIRO ---");
+        for (Jogador j : todosJogadores) {
+            System.out.println(" - " + j.getNome() + ": " + j.getVoltasCompletas() + " volta(s) completa(s).");
+        }
+
+        // 3. Imóvel que gerou o maior valor de aluguel durante a partida
+        System.out.println("\n🏠 --- IMÓVEL COM MAIOR ALUGUEL GERADO ---");
+        CasaImovel imovelTopAluguel = null;
+        double maxAluguel = 0.0;
+        if (tabuleiro.getCabeca() != null) {
+            NoTabuleiro atual = tabuleiro.getCabeca();
+            do {
+                if (atual.getCasa() instanceof CasaImovel) {
+                    CasaImovel imovel = (CasaImovel) atual.getCasa();
+                    if (imovel.getTotalAluguelGerado() > maxAluguel) {
+                        maxAluguel = imovel.getTotalAluguelGerado();
+                        imovelTopAluguel = imovel;
+                    }
                 }
-                System.out.printf(" - %s (%s): Saldo R$ %.2f + Imóveis R$ %.2f = Patrimônio Total R$ %.2f\n",
-                    j.getNome(), j.getTipoPersonagem(), j.getSaldo(), (patrimonio - j.getSaldo()), patrimonio);
-                
-                if (patrimonio > maiorPatrimonio) {
-                    maiorPatrimonio = patrimonio;
+                atual = atual.getProximo();
+            } while (atual != tabuleiro.getCabeca());
+        }
+        if (imovelTopAluguel != null && maxAluguel > 0) {
+            String donoInfo = imovelTopAluguel.getProprietario() != null 
+                    ? "Dono atual: " + imovelTopAluguel.getProprietario().getNome() 
+                    : "Sem dono";
+            System.out.printf(" - %s (%s) | Aluguel Total Acumulado: R$ %.2f | %s\n",
+                    imovelTopAluguel.getNome(), imovelTopAluguel.getCorGrupo(), maxAluguel, donoInfo);
+        } else {
+            System.out.println(" - Nenhum aluguel foi gerado durante a partida.");
+        }
+
+        // 4. Jogadores falidos
+        System.out.println("\n💀 --- JOGADORES FALIDOS ---");
+        if (jogadoresFalidos.isEmpty()) {
+            System.out.println(" - Nenhum jogador faliu nesta partida.");
+        } else {
+            for (int i = 0; i < jogadoresFalidos.size(); i++) {
+                Jogador f = jogadoresFalidos.get(i);
+                System.out.println(" - " + f.getNome() + " (" + f.getTipoPersonagem() + ") - Eliminado após " + f.getVoltasCompletas() + " volta(s).");
+            }
+        }
+
+        // 5. Jogador vencedor
+        System.out.println("\n⭐ --- JOGADOR VENCEDOR ---");
+        Jogador vencedor = null;
+        if (jogadoresAtivos.size() == 1) {
+            vencedor = jogadoresAtivos.get(0);
+            System.out.println(" 🏆 VENCEDOR POR ELIMINAÇÃO: " + vencedor.getNome().toUpperCase() + " (" + vencedor.getTipoPersonagem() + ")!");
+        } else if (jogadoresAtivos.size() > 1) {
+            double maiorPatrimonio = -1.0;
+            for (Jogador j : jogadoresAtivos) {
+                double pat = calcularPatrimonio(j);
+                if (pat > maiorPatrimonio) {
+                    maiorPatrimonio = pat;
                     vencedor = j;
                 }
             }
             if (vencedor != null) {
-                System.out.println("\n🏆 VENCEDOR DO JOGO POR PATRIMÔNIO: " + vencedor.getNome().toUpperCase() + " (" + vencedor.getTipoPersonagem() + ")");
+                System.out.printf(" 🏆 VENCEDOR POR PATRIMÔNIO (Limite de %d rodadas): %s (%s) com Patrimônio de R$ %.2f!\n",
+                        (rodada - 1), vencedor.getNome().toUpperCase(), vencedor.getTipoPersonagem(), calcularPatrimonio(vencedor));
             }
         } else {
-            System.out.println("O jogo encerrou abruptamente sem vencedores.");
-        }
-
-        System.out.println("\n--- ORDEM DE ELIMINAÇÃO POR FALÊNCIA ---");
-        for (int i = 0; i < jogadoresFalidos.size(); i++) {
-            Jogador f = jogadoresFalidos.get(i);
-            System.out.println((i + 1) + "º Lugar Eliminado: " + f.getNome() + " (" + f.getTipoPersonagem() + ") - Durou " + f.getVoltasCompletas() + " voltas.");
+            System.out.println(" Não houve vencedor na partida.");
         }
         System.out.println("\n=========================================================");
     }

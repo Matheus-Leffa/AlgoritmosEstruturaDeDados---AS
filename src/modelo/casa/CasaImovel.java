@@ -15,6 +15,7 @@ public class CasaImovel extends Casa {
     private boolean temHotel;
     private String corGrupo;
     private Jogador proprietario;
+    private double totalAluguelGerado;
 
     public CasaImovel(int id, String nome, String descricao, double precoCompra, double aluguelBase,
                       double aluguelPorCasa, double custoConstrucaoCasa, String corGrupo) {
@@ -27,6 +28,7 @@ public class CasaImovel extends Casa {
         this.quantidadeCasas = 0;
         this.temHotel = false;
         this.proprietario = null;
+        this.totalAluguelGerado = 0.0;
     }
 
     public double getPrecoCompra() {
@@ -35,6 +37,16 @@ public class CasaImovel extends Casa {
 
     public void setPrecoCompra(double precoCompra) {
         this.precoCompra = precoCompra;
+    }
+
+    public double getTotalAluguelGerado() {
+        return totalAluguelGerado;
+    }
+
+    public void adicionarAluguelGerado(double valor) {
+        if (valor > 0) {
+            this.totalAluguelGerado += valor;
+        }
     }
 
     public double getAluguelBase() {
